@@ -1,5 +1,5 @@
 const Deposit = require("../model/depositmodel");
-const Users = require("../../Backend/mvc/model/usermodel");
+const Users = require("../model/usermodel");
 const bcrypt = require("bcrypt");
 
 const createDeposit = async (req, res) => {
