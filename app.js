@@ -3,8 +3,9 @@ const cors = require("cors");
 const dotenv = require("dotenv");
 const app = express();
 const { connectiondb } = require("./db/connect");
-const authroute = require("./mvc/route/authroutes")
-const dashboardrouter = require("./mvc/route/userdashboardroutes")
+const authroute = require("./mvc/route/authroutes");
+const dashboardrouter = require("./mvc/route/userdashboardroutes");
+const referralRouter = require("./mvc/route/referralRoutes");
 const multer = require("multer");
 const path = require("path");
 
@@ -63,6 +64,8 @@ app.get("/register",(req,res)=>
 
 app.use("/auth", authroute);
 app.use("/dashboard", dashboardrouter);
+app.use("/api/user", referralRouter);
+
 app.listen(`${process.env.PORT}`,'0.0.0.0', () => {
   console.log("server listen");
 });
