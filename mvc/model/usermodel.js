@@ -1,4 +1,4 @@
-const mongoose = require("mongoose");
+const mongoose = require("../../Backend/node_modules/mongoose");
 
 const UserSchema = new mongoose.Schema(
   {

@@ -1,7 +1,7 @@
 const express = require('express');
 const router = express.Router();
 const { getReferralData, processReferral } = require('../controller/referralController');
-const { verifyToken } = require('../middleware/auth'); // Updated middleware name
+const { verifyToken } = require('../Middleware/auth');
 
 // Get user's referral data
 router.get('/referral-data', verifyToken, getReferralData);
