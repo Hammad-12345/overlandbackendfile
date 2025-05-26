@@ -66,6 +66,16 @@ app.use("/auth", authroute);
 app.use("/dashboard", dashboardrouter);
 app.use("/api/user", referralRouter);
 
+// Additional routes from server.js
+const adminRoutes = require('./routes/admin');
+app.use('/api/admin', adminRoutes);
+
+// Error handling middleware
+app.use((err, req, res, next) => {
+  console.error(err.stack);
+  res.status(500).json({ message: 'Something went wrong!' });
+});
+
 app.listen(`${process.env.PORT}`,'0.0.0.0', () => {
   console.log("server listen");
 });

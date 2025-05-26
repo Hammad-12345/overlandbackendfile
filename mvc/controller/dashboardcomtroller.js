@@ -1,6 +1,7 @@
 const Deposit = require("../model/depositmodel");
 const Users = require("../model/usermodel");
 const bcrypt = require("bcrypt");
+const Profit = require("../model/Profit");
 
 const createDeposit = async (req, res) => {
   const { investmentPlan, price, paymentMethod, depositAddress, screenshot, paymentMode } = req.body;
@@ -29,6 +30,24 @@ const fetchallinvestment = async (req, res) => {
   try {
     const deposits = await Deposit.find({ userId }).sort({ createdAt: -1 });
     res.status(200).json(deposits);
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+};
+
+const fetchUserProfits = async (req, res) => {
+  const userId = req.userId;
+
+  try {
+    const profits = await Profit.find({ userId }).sort({ date: -1 });
+    
+    // Calculate total profit
+    const totalProfit = profits.reduce((sum, profit) => sum + (Number(profit.amount) || 0), 0);
+    
+    res.status(200).json({
+      profits,
+      totalProfit
+    });
   } catch (error) {
     res.status(500).json({ message: error.message });
   }
@@ -80,4 +99,4 @@ const updateProfile = async (req, res) => {
   }
 };
 
-module.exports = { createDeposit, fetchallinvestment, updateProfile };
+module.exports = { createDeposit, fetchallinvestment, fetchUserProfits, updateProfile };
