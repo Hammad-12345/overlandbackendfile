@@ -2,6 +2,7 @@ const nodemailer = require("nodemailer");
 const bcrypt = require("bcrypt"); // assuming you're using bcrypt
 const Users = require("../model/usermodel"); // adjust path as needed
 const jwt = require("jsonwebtoken");
+const Referral = require("../model/referralModel");
 
 const register = async (req, res) => {
   const {
@@ -12,8 +13,9 @@ const register = async (req, res) => {
     EmailAddress,
     Password,
     CountryPhoneCode,
+    ReferralCode
   } = req.body;
-
+console.log(ReferralCode)
   try {
     const FullContactNumber = `${CountryPhoneCode}${ContactNumber}`;
 
@@ -37,11 +39,42 @@ const register = async (req, res) => {
       EmailAddress,
       Password: hashedPassword,
       Role: "user",
-      Otp:0
+      Otp:0,
     });
 
     await newUser.save();
+    if(ReferralCode){
+      console.log(ReferralCode)
+      const referrer = await Referral.findOne({ referralCode:ReferralCode });
+      if(referrer){
+        console.log(referrer)
+        try {
+          const newReferral = await Referral.findOneAndUpdate(
+            { referralCode: ReferralCode },
+            {
+              $set: {
+                userId: referrer.userId,
+                referralCode: ReferralCode,
+                referredTo: referrer.referredTo ? [...referrer.referredTo, EmailAddress] : [EmailAddress],
+                updatedAt: new Date()
+              },
+              $inc: {
+                totalReferrals: 1,
+                successfulReferrals: 1
+              }
+            },
+            { new: true, upsert: true }
+          );
 
+          if (!newReferral) {
+            throw new Error('Failed to update referral');
+          }
+        } catch (error) {
+          console.error('Error updating referral:', error);
+          // Handle the error appropriately
+        }
+      }
+    }
     // ✅ Send welcome email
     const transporter = nodemailer.createTransport({
       service: "gmail", // or your SMTP provider
@@ -64,7 +97,7 @@ const register = async (req, res) => {
           <div style="padding: 30px; background-color: #ffffff;">
             <h2 style="color: #0d1321; font-size: 22px;">Hello ${Name},</h2>
             <p style="font-size: 16px; color: #333; line-height: 1.6;">
-              Thank you for registering at <strong>Overland Solutions</strong>. We’re thrilled to have you with us! 🎉
+              Thank you for registering at <strong>Overland Solutions</strong>. We're thrilled to have you with us! 🎉
             </p>
             <p style="font-size: 16px; color: #333; line-height: 1.6;">
               You now have full access to our platform where you can manage your trading accounts, view performance stats, and more.
@@ -73,7 +106,7 @@ const register = async (req, res) => {
               Login
             </a>
             <p style="margin-top: 40px; font-size: 13px; color: #888;">
-              If you didn’t create this account, you can safely ignore this email or contact our support team.
+              If you didn't create this account, you can safely ignore this email or contact our support team.
             </p>
           </div>
           <div style="background-color: #f7f7f7; padding: 20px; text-align: center; font-size: 12px; color: #999;">

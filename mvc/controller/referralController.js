@@ -1,9 +1,10 @@
-const Referral = require('../model/referralModel');
-const crypto = require('crypto');
+const Referral = require("../model/referralModel");
+const User = require("../model/usermodel");
+const crypto = require("crypto");
 
 // Generate a unique referral code
 const generateReferralCode = () => {
-  return crypto.randomBytes(4).toString('hex').toUpperCase();
+  return crypto.randomBytes(4).toString("hex").toUpperCase();
 };
 
 // Get or create referral data for a user
@@ -22,18 +23,29 @@ const getReferralData = async (req, res) => {
       });
     }
 
+    // If there are referred users, fetch their creation times
+    let referredUsersData = [];
+    if (referralData.referredTo && referralData.referredTo.length > 0) {
+      referredUsersData = await User.find(
+        { EmailAddress: { $in: referralData.referredTo } },
+        { EmailAddress: 1, createdAt: 1 }
+      );
+    }
+
     res.json({
       referralCode: referralData.referralCode,
       stats: {
         totalReferrals: referralData.totalReferrals,
         successfulReferrals: referralData.successfulReferrals,
-        pendingReferrals: referralData.pendingReferrals,
-        rewardsEarned: referralData.rewardsEarned
-      }
+        referredTo: referredUsersData.map((user) => ({
+          email: user.EmailAddress,
+          createdAt: user.createdAt,
+        })),
+      },
     });
   } catch (error) {
-    console.error('Error in getReferralData:', error);
-    res.status(500).json({ error: 'Failed to fetch referral data' });
+    console.error("Error in getReferralData:", error);
+    res.status(500).json({ error: "Failed to fetch referral data" });
   }
 };
 
@@ -46,20 +58,20 @@ const processReferral = async (req, res) => {
     // Find the referrer
     const referrer = await Referral.findOne({ referralCode });
     if (!referrer) {
-      return res.status(400).json({ error: 'Invalid referral code' });
+      return res.status(400).json({ error: "Invalid referral code" });
     }
 
     // Check if user was already referred
     const existingReferral = await Referral.findOne({ userId: newUserId });
     if (existingReferral) {
-      return res.status(400).json({ error: 'User already has a referral' });
+      return res.status(400).json({ error: "User already has a referral" });
     }
 
     // Create new referral record for the new user
     await Referral.create({
       userId: newUserId,
       referralCode: generateReferralCode(),
-      referredBy: referrer.userId
+      referredBy: referrer.userId,
     });
 
     // Update referrer's stats
@@ -67,14 +79,14 @@ const processReferral = async (req, res) => {
     referrer.pendingReferrals += 1;
     await referrer.save();
 
-    res.json({ message: 'Referral processed successfully' });
+    res.json({ message: "Referral processed successfully" });
   } catch (error) {
-    console.error('Error in processReferral:', error);
-    res.status(500).json({ error: 'Failed to process referral' });
+    console.error("Error in processReferral:", error);
+    res.status(500).json({ error: "Failed to process referral" });
   }
 };
 
 module.exports = {
   getReferralData,
-  processReferral
-}; 
+  processReferral,
+};

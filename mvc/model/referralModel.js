@@ -19,17 +19,8 @@ const referralSchema = new mongoose.Schema({
     type: Number,
     default: 0
   },
-  pendingReferrals: {
-    type: Number,
-    default: 0
-  },
-  rewardsEarned: {
-    type: Number,
-    default: 0
-  },
-  referredBy: {
-    type: mongoose.Schema.Types.ObjectId,
-    ref: 'User',
+  referredTo: {
+    type:Array,
     default: null
   },
   createdAt: {

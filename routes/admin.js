@@ -4,6 +4,7 @@ const User = require('../mvc/model/usermodel.js');
 const Investment = require('../mvc/model/depositmodel.js');
 const Profit = require('../mvc/model/Profit.js');
 const Withdrawal = require('../mvc/model/Withdrawal.js');
+const Referral = require('../mvc/model/referralModel.js');
 
 // Get dashboard stats
 router.get('/stats', async (req, res) => {
@@ -44,7 +45,8 @@ router.get('/investments', async (req, res) => {
   try {
     const investments = await Investment.find()
       .populate('userId', 'EmailAddress')
-      .select('price investmentPlan paymentMode createdAt');
+      .select('price investmentPlan paymentMode screenshot createdAt')
+      .sort({ createdAt: -1 });
 
     // Define investment plans with their details
     const investmentPlans = {
@@ -85,7 +87,8 @@ router.get('/investments', async (req, res) => {
         planDetails: planDetails,
         price: inv.price || 0,
         paymentMode: inv.paymentMode || 'pending',
-        createdAt: inv.createdAt || new Date()
+        createdAt: inv.createdAt || new Date(),
+        screenshot: inv.screenshot || 'N/A'
       };
     });
 
@@ -116,27 +119,27 @@ router.post('/process-profits', async (req, res) => {
       // Calculate profit based on investment plan
       switch(investment.investmentPlan) {
         case 'Gold Trading':
-          // 1.5% to 3.5% daily profit
-          dailyProfit = investment.price * (0.015 + Math.random() * 0.02);
+          // 2.5% daily profit (average of 1.5% and 3.5%)
+          dailyProfit = investment.price * 0.025;
           break;
         case 'RetroDrops':
-          // 35% to 50% profit in 180 days, so daily rate is (35-50%)/180
-          const dailyRate = (0.35 + Math.random() * 0.15) / 180;
-          dailyProfit = investment.price * dailyRate;
+          // 42.5% profit in 180 days (average of 35% and 50%), distributed daily
+          const retroDropsDailyRate = 0.425 / 180;
+          dailyProfit = investment.price * retroDropsDailyRate;
           break;
         case 'Amazon':
-          // 13% to 15% monthly profit, so daily rate is (13-15%)/30
-          const amazonDailyRate = (0.13 + Math.random() * 0.02) / 30;
+          // 14% monthly profit (average of 13% and 15%), distributed daily
+          const amazonDailyRate = 0.14 / 30;
           dailyProfit = investment.price * amazonDailyRate;
           break;
         case 'AirBnB':
-          // 7.5% to 10% monthly profit, so daily rate is (7.5-10%)/30
-          const airbnbDailyRate = (0.075 + Math.random() * 0.025) / 30;
+          // 8.75% monthly profit (average of 7.5% and 10%), distributed daily
+          const airbnbDailyRate = 0.0875 / 30;
           dailyProfit = investment.price * airbnbDailyRate;
           break;
         case 'Mineral Water':
-          // 8.5% to 12.5% monthly profit, so daily rate is (8.5-12.5%)/30
-          const waterDailyRate = (0.085 + Math.random() * 0.04) / 30;
+          // 10.5% monthly profit (average of 8.5% and 12.5%), distributed daily
+          const waterDailyRate = 0.105 / 30;
           dailyProfit = investment.price * waterDailyRate;
           break;
         default:
@@ -188,6 +191,61 @@ router.put('/withdrawals/:id', async (req, res) => {
     res.json(withdrawal);
   } catch (error) {
     res.status(500).json({ message: error.message });
+  }
+});
+
+router.put('/updateinvestments', async (req, res) => {
+  try {
+    const { id, paymentMode } = req.body;
+    const updatedInvestment = await Investment.findByIdAndUpdate(
+      id,
+      { paymentMode },
+      { new: true }
+    );
+    res.status(200).json(updatedInvestment);
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+});
+
+// Get all referrals
+router.get('/referrals', async (req, res) => {
+  try {
+    const referrals = await Referral.find()
+      .populate('userId', 'Name EmailAddress')
+      .select('referralCode totalReferrals successfulReferrals referredTo')
+      .sort({ createdAt: -1 });
+
+    res.json({
+      success: true,
+      data: referrals,
+      total: referrals.length
+    });
+  } catch (error) {
+    console.error('Error in /referrals route:', error);
+    res.status(500).json({ 
+      success: false,
+      message: error.message 
+    });
+  }
+});
+
+router.get('/profits', async (req, res) => {
+  try {
+    const profits = await Profit.find();
+    const lastProfitEntry = await Profit.findOne().sort({ date: -1 });
+    const lastDistributionDate = lastProfitEntry ? lastProfitEntry.date : null;
+
+    res.json({
+      profits,
+      lastDistributionDate
+    });
+  } catch (error) {
+    console.error('Error in /profits route:', error);
+    res.status(500).json({ 
+      success: false,
+      message: error.message 
+    });
   }
 });
 
