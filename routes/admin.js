@@ -9,7 +9,7 @@ const Referral = require('../mvc/model/referralModel.js');
 // Get dashboard stats
 router.get('/stats', async (req, res) => {
   try {
-    const totalUsers = await User.countDocuments();
+    const totalUsers = await User.countDocuments({ Role: 'user' });
     const totalInvestments = await Investment.aggregate([
       { $match: { paymentMode: 'active' } },
       { $group: { _id: null, total: { $sum: '$price' } } }
@@ -33,7 +33,7 @@ router.get('/stats', async (req, res) => {
 // Get all users
 router.get('/users', async (req, res) => {
   try {
-    const users = await User.find().select('-password');
+    const users = await User.find({ Role: 'user' });
     res.json(users);
   } catch (error) {
     res.status(500).json({ message: error.message });
