@@ -8,7 +8,7 @@ const profitSchema = new mongoose.Schema({
   },
   investmentId: {
     type: mongoose.Schema.Types.ObjectId,
-    ref: 'Investment',
+    ref: 'Deposit',
     required: true
   },
   investmentPlanId: {

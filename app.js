@@ -6,6 +6,7 @@ const { connectiondb } = require("./db/connect");
 const authroute = require("./mvc/route/authroutes");
 const dashboardrouter = require("./mvc/route/userdashboardroutes");
 const referralRouter = require("./mvc/route/referralRoutes");
+const contactRouter = require("./mvc/route/contactRoutes");
 const multer = require("multer");
 const path = require("path");
 
@@ -65,6 +66,7 @@ app.get("/register",(req,res)=>
 app.use("/auth", authroute);
 app.use("/dashboard", dashboardrouter);
 app.use("/api/user", referralRouter);
+app.use("/contact", contactRouter);
 
 // Additional routes from server.js
 const adminRoutes = require('./routes/admin');

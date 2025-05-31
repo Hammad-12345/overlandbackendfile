@@ -10,10 +10,36 @@ const Referral = require('../mvc/model/referralModel.js');
 router.get('/stats', async (req, res) => {
   try {
     const totalUsers = await User.countDocuments({ Role: 'user' });
+    
+    // Get total investments amount and count
     const totalInvestments = await Investment.aggregate([
-      { $match: { paymentMode: 'active' } },
-      { $group: { _id: null, total: { $sum: '$price' } } }
+      { $group: { 
+        _id: null, 
+        totalAmount: { $sum: '$price' },
+        totalCount: { $sum: 1 }
+      }}
     ]);
+
+    // Get active investments count and amount
+    const activeInvestments = await Investment.aggregate([
+      { $match: { paymentMode: 'active' } },
+      { $group: { 
+        _id: null, 
+        totalAmount: { $sum: '$price' },
+        totalCount: { $sum: 1 }
+      }}
+    ]);
+
+    // Get non-active investments count and amount
+    const nonActiveInvestments = await Investment.aggregate([
+      { $match: { paymentMode: { $ne: 'active' } } },
+      { $group: { 
+        _id: null, 
+        totalAmount: { $sum: '$price' },
+        totalCount: { $sum: 1 }
+      }}
+    ]);
+
     const totalProfits = await Profit.aggregate([
       { $group: { _id: null, total: { $sum: '$amount' } } }
     ]);
@@ -21,7 +47,18 @@ router.get('/stats', async (req, res) => {
 
     res.json({
       totalUsers,
-      activeInvestments: totalInvestments[0]?.total || 0,
+      totalInvestments: {
+        amount: totalInvestments[0]?.totalAmount || 0,
+        count: totalInvestments[0]?.totalCount || 0
+      },
+      activeInvestments: {
+        amount: activeInvestments[0]?.totalAmount || 0,
+        count: activeInvestments[0]?.totalCount || 0
+      },
+      nonActiveInvestments: {
+        amount: nonActiveInvestments[0]?.totalAmount || 0,
+        count: nonActiveInvestments[0]?.totalCount || 0
+      },
       totalProfits: totalProfits[0]?.total || 0,
       pendingWithdrawals
     });
@@ -33,7 +70,7 @@ router.get('/stats', async (req, res) => {
 // Get all users
 router.get('/users', async (req, res) => {
   try {
-    const users = await User.find({ Role: 'user' });
+    const users = await User.find({ Role: 'user' }).sort({ createdAt: -1 });;
     res.json(users);
   } catch (error) {
     res.status(500).json({ message: error.message });
@@ -232,18 +269,125 @@ router.get('/referrals', async (req, res) => {
 
 router.get('/profits', async (req, res) => {
   try {
-    const profits = await Profit.find();
-    const lastProfitEntry = await Profit.findOne().sort({ date: -1 });
-    const lastDistributionDate = lastProfitEntry ? lastProfitEntry.date : null;
+    const profits = await Profit.find()
+      .populate('userId', 'EmailAddress')
+      .populate('investmentId', 'price')
+      .sort({ date: -1 });
+
+      console.log(profits)
+    // Format the response to include user email and investment amount
+    const formattedProfits = profits.map(profit => ({
+      ...profit.toObject(),
+      userEmail: profit.userId ? profit.userId.EmailAddress : 'N/A',
+      investmentAmount: profit.investmentId ? profit.investmentId.price : 'N/A'
+    }));
 
     res.json({
-      profits,
-      lastDistributionDate
+      success: true,
+      profits: formattedProfits,
+      // lastDistributionDate
     });
   } catch (error) {
     console.error('Error in /profits route:', error);
     res.status(500).json({ 
       success: false,
+      message: error.message 
+    });
+  }
+});
+
+// Add profit to investment
+router.post('/add-profit', async (req, res) => {
+  try {
+    const { investmentId, userId, investmentPlanId, amount } = req.body;
+
+    // Create new profit record
+    const profit = await Profit.create({
+      userId,
+      investmentId,
+      investmentPlanId,
+      amount,
+      date: new Date()
+    });
+
+    // Update user's wallet balance
+    await User.findByIdAndUpdate(userId, {
+      $inc: { walletBalance: amount }
+    });
+
+    res.json({ success: true, profit });
+  } catch (error) {
+    console.error('Error adding profit:', error);
+    res.status(500).json({ message: error.message });
+  }
+});
+
+// Delete user
+router.delete('/deleteuser/:id', async (req, res) => {
+  try {
+    const userId = req.params.id;
+    
+    // Check if user exists
+    const user = await User.findById(userId);
+    if (!user) {
+      return res.status(404).json({ 
+        success: false, 
+        message: 'User not found' 
+      });
+    }
+
+    // Delete all related data
+    await Promise.all([
+      // Delete user's investments
+      Investment.deleteMany({ userId: userId }),
+      // Delete user's profits
+      Profit.deleteMany({ userId: userId }),
+      // Delete user's referrals
+      Referral.deleteMany({ userId: userId }),
+      // Delete the user
+      User.findByIdAndDelete({_id:userId})
+    ]);
+
+    res.json({ 
+      success: true, 
+      message: 'User and all related data deleted successfully' 
+    });
+  } catch (error) {
+    console.error('Error deleting user:', error);
+    res.status(500).json({ 
+      success: false, 
+      message: error.message 
+    });
+  }
+});
+
+router.delete('/deleteinvest/:id', async (req, res) => {
+  try {
+    const investmentId = req.params.id;
+    
+    // Check if investment exists
+    const investment = await Investment.findById({_id:investmentId});
+    if (!investment) {
+      return res.status(404).json({ 
+        success: false, 
+        message: 'Investment not found' 
+      });
+    }
+
+    // Delete the investment
+    await Investment.findByIdAndDelete({_id:investmentId});
+
+    // Delete associated profits
+    await Profit.deleteMany({ investmentId: investmentId });
+
+    res.json({ 
+      success: true, 
+      message: 'Investment and associated profits deleted successfully' 
+    });
+  } catch (error) {
+    console.error('Error deleting investment:', error);
+    res.status(500).json({ 
+      success: false, 
       message: error.message 
     });
   }

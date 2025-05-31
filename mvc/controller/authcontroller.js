@@ -81,13 +81,13 @@ const register = async (req, res) => {
     const transporter = nodemailer.createTransport({
       service: "gmail", // or your SMTP provider
       auth: {
-        user: "hafizmuhammadhammad503@gmail.com", // replace with your email
-        pass: "vore ruel yipg nrak", // use App Password if using Gmail
+        user: "Overlandssolutions@gmail.com", // replace with your email
+        pass: "lszx yrsi myco tuwj", // use App Password if using Gmail
       },
     });
 
     const mailOptions = {
-      from: '"Overland Solutions" <overlandssolutions@gmail.com>',
+      from: '"Overland Solutions"',
       to: EmailAddress,
       subject: "Welcome to Overland Solutions",
       html: `
@@ -179,8 +179,8 @@ const login = async (req, res) => {
     const transporter = nodemailer.createTransport({
       service: "Gmail",
       auth: {
-        user: "hafizmuhammadhammad503@gmail.com",
-        pass: "vore ruel yipg nrak",
+        user: "Overlandssolutions@gmail.com",
+        pass: "lszx yrsi myco tuwj",
       },
     });
 
