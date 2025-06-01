@@ -2,6 +2,7 @@ const Deposit = require("../model/depositmodel");
 const Users = require("../model/usermodel");
 const bcrypt = require("bcrypt");
 const Profit = require("../model/Profit");
+const Notification = require("../model/notificationModel");
 
 const createDeposit = async (req, res) => {
   const { investmentPlan, price, paymentMethod, depositAddress, screenshot, paymentMode } = req.body;
@@ -18,6 +19,18 @@ const createDeposit = async (req, res) => {
       screenshot,
       paymentMode
     });
+
+    // Create notification for the user
+    await Notification.create({
+      userId,
+      type: 'investment',
+      title: 'New Investment',
+      message: `Your investment of $${price} in ${investmentPlan} has been submitted successfully.`,
+      isRead: false,
+      relatedId: deposit._id,
+      onModel: 'Deposit'
+    });
+
     res.status(201).json(deposit);
   } catch (error) {
     res.status(500).json({ message: error.message });

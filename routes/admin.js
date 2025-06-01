@@ -5,6 +5,7 @@ const Investment = require('../mvc/model/depositmodel.js');
 const Profit = require('../mvc/model/Profit.js');
 const Withdrawal = require('../mvc/model/Withdrawal.js');
 const Referral = require('../mvc/model/referralModel.js');
+const Notification = require('../mvc/model/notificationModel.js');
 
 // Get dashboard stats
 router.get('/stats', async (req, res) => {
@@ -239,6 +240,19 @@ router.put('/updateinvestments', async (req, res) => {
       { paymentMode },
       { new: true }
     );
+
+    // Create notification when investment is approved
+    if (paymentMode === 'active') {
+      await Notification.create({
+        userId: updatedInvestment.userId,
+        type: 'investment',
+        title: 'Investment Approved',
+        message: `Your investment of $${updatedInvestment.price} in ${updatedInvestment.investmentPlan} has been approved and is now active.`,
+        relatedId: updatedInvestment._id,
+        onModel: 'Deposit'
+      });
+    }
+
     res.status(200).json(updatedInvestment);
   } catch (error) {
     res.status(500).json({ message: error.message });
@@ -313,6 +327,16 @@ router.post('/add-profit', async (req, res) => {
     // Update user's wallet balance
     await User.findByIdAndUpdate(userId, {
       $inc: { walletBalance: amount }
+    });
+
+    // Create notification for profit
+    await Notification.create({
+      userId,
+      type: 'profit',
+      title: 'New Profit Added',
+      message: `You have received a profit of $${amount.toFixed(2)} from your ${investmentPlanId} investment.`,
+      relatedId: profit._id,
+      onModel: 'Profit'
     });
 
     res.json({ success: true, profit });
@@ -390,6 +414,34 @@ router.delete('/deleteinvest/:id', async (req, res) => {
       success: false, 
       message: error.message 
     });
+  }
+});
+
+// Get admin notifications
+router.get('/notifications', async (req, res) => {
+  try {
+    const notifications = await Notification.find({ isRead: false })
+      .sort({ createdAt: -1 })
+      .limit(50);
+    res.json(notifications);
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+});
+
+// Mark admin notification as read
+router.put('/notifications/:id/read', async (req, res) => {
+  try {
+    const notification = await Notification.findOneAndUpdate(
+      { _id: req.params.id },
+      { isRead: true },
+    );
+    // if (!notification) {
+    //   return res.status(404).json({ message: "Notification not found" });
+    // }
+    res.json({message:"success"});
+  } catch (error) {
+    res.status(500).json({ message: error.message });
   }
 });
 

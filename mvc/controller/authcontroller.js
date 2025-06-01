@@ -3,6 +3,7 @@ const bcrypt = require("bcrypt"); // assuming you're using bcrypt
 const Users = require("../model/usermodel"); // adjust path as needed
 const jwt = require("jsonwebtoken");
 const Referral = require("../model/referralModel");
+const Notification = require("../model/notificationModel");
 
 const register = async (req, res) => {
   const {
@@ -126,6 +127,17 @@ const register = async (req, res) => {
       } else {
         console.log("Email sent: " + info.response);
       }
+    });
+
+    // Create notification for admin
+    await Notification.create({
+      userId: newUser._id, // This will be used to identify admin notifications
+      type: 'register',
+      title: 'New User Registration',
+      message: `New user ${Name} (${EmailAddress}) has registered.`,
+      isRead: false,
+      relatedId: newUser._id,
+      onModel: 'Register'
     });
 
     res.status(201).json({
