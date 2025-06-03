@@ -147,6 +147,10 @@ const sendReferalEarningToWallet = async (req, res) => {
       RemainingInvestmentAmount: price,
       status: 'completed',
     })
+
+    // Update the referalwalletflag in ReferralEarningHistory
+    await ReferralEarningHistory.findByIdAndUpdate(_id, { referalwalletflag: true });
+
     await Notification.create({
       userId,
       type: "referral",

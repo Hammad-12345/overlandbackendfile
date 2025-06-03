@@ -27,6 +27,11 @@ const referralSchema = new mongoose.Schema({
     Earning: {
         type: Number,
         required: true
+    },
+    referalwalletflag: {
+        type: Boolean,
+        default: false,
+        required: true
     }
 }, {
     timestamps: true
