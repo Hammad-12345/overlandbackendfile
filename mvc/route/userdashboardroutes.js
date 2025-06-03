@@ -1,6 +1,6 @@
 const express = require("express");
 const dashboardrouter = express.Router();
-const { createDeposit, fetchallinvestment, updateProfile, fetchUserProfits } = require("../controller/dashboardcomtroller");
+const { createDeposit, fetchallinvestment, updateProfile, fetchUserProfits, fetchwalletbalance,sendprofittowallet,createWithdrawRequest,fetchWithdrawRequests } = require("../controller/dashboardcomtroller");
 const jwt = require("jsonwebtoken");
 const { verifyToken } = require("../Middleware/auth");
 const Notification = require("../model/notificationModel");
@@ -43,6 +43,11 @@ dashboardrouter.put("/notifications/:id/read", verifyToken, async (req, res) => 
     res.status(500).json({ message: error.message });
   }
 });
+
+dashboardrouter.get("/fetchwalletbalance",verifyToken,fetchwalletbalance)
+dashboardrouter.post("/sendprofittowallet",verifyToken,sendprofittowallet)
+dashboardrouter.post("/withdraw",verifyToken,createWithdrawRequest)
+dashboardrouter.get("/withdrawrequests",verifyToken,fetchWithdrawRequests)
 
 // dashboardrouter.get("/fetchgoldtradinghistory",verifyToken,fetchallgoldtradinghistory)
 // dashboardrouter.get("/fetchairbnbhistory",verifyToken,fetchallgoldtradinghistory)

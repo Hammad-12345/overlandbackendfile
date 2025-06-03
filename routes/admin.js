@@ -6,7 +6,11 @@ const Profit = require('../mvc/model/Profit.js');
 const Withdrawal = require('../mvc/model/Withdrawal.js');
 const Referral = require('../mvc/model/referralModel.js');
 const Notification = require('../mvc/model/notificationModel.js');
-
+const ReferralEarningHistory = require('../mvc/model/ReferalEarningHistory.js');
+const Wallet = require('../mvc/model/walletModel.js');
+const PlanProfitToWallet = require("../mvc/model/PlanProfitToWallet.js");
+const WithdrawRequest = require("../mvc/model/WithdrawRequest.js");
+const ReferralWalletHistory = require("../mvc/model/referaltowallethistory.js");
 // Get dashboard stats
 router.get('/stats', async (req, res) => {
   try {
@@ -44,7 +48,7 @@ router.get('/stats', async (req, res) => {
     const totalProfits = await Profit.aggregate([
       { $group: { _id: null, total: { $sum: '$amount' } } }
     ]);
-    const pendingWithdrawals = await Withdrawal.countDocuments({ status: 'pending' });
+    const pendingWithdrawals = await WithdrawRequest.countDocuments({ status: 'pending' });
 
     res.json({
       totalUsers,
@@ -315,34 +319,52 @@ router.post('/add-profit', async (req, res) => {
   try {
     const { investmentId, userId, investmentPlanId, amount } = req.body;
 
-    // Create new profit record
-    const profit = await Profit.create({
-      userId,
-      investmentId,
-      investmentPlanId,
-      amount,
-      date: new Date()
+    // First check if user exists
+    const user = await User.findById(userId);
+    if (!user) {
+      return res.status(404).json({
+        success: false,
+        message: 'User not found'
+      });
+    }
+
+    // Check if profit already exists for this investment
+    const existingProfit = await Profit.findOne({ investmentId });
+    
+    if (existingProfit) {
+      // Update existing profit by adding new amount
+      existingProfit.amount += amount;
+      await existingProfit.save();
+
+      return res.status(200).json({
+        success: true,
+        message: 'Profit updated successfully',
+        profit: existingProfit
+      });
+    }
+    else{
+      const profit = await Profit.create({
+        userId,
+        investmentId,
+        investmentPlanId,
+        amount,
+        date: new Date()
+      });
+    }
+
+
+    return res.status(201).json({
+      success: true,
+      message: 'Profit added successfully',
     });
 
-    // Update user's wallet balance
-    await User.findByIdAndUpdate(userId, {
-      $inc: { walletBalance: amount }
-    });
-
-    // Create notification for profit
-    await Notification.create({
-      userId,
-      type: 'profit',
-      title: 'New Profit Added',
-      message: `You have received a profit of $${amount.toFixed(2)} from your ${investmentPlanId} investment.`,
-      relatedId: profit._id,
-      onModel: 'Profit'
-    });
-
-    res.json({ success: true, profit });
   } catch (error) {
-    console.error('Error adding profit:', error);
-    res.status(500).json({ message: error.message });
+    console.error('Error in add-profit:', error);
+    return res.status(500).json({
+      success: false,
+      message: 'Error adding profit',
+      error: error.message
+    });
   }
 });
 
@@ -443,6 +465,334 @@ router.put('/notifications/:id/read', async (req, res) => {
   } catch (error) {
     res.status(500).json({ message: error.message });
   }
+});
+
+// Get investments of referred users
+router.get('/referred-investments', async (req, res) => {
+  try {
+    // Get all referrals with their referred users
+    const referrals = await Referral.find()
+      .populate('userId', 'Name EmailAddress')
+      .populate('referredTo', 'Name EmailAddress');
+
+    // Array to store all referred users' investments
+    const referredInvestments = [];
+
+    // For each referral, get the investments of referred users
+    for (const referral of referrals) {
+      if (referral.referredTo && referral.referredTo.length > 0) {
+        for (const referredUser of referral.referredTo) {
+          // First find the user by email to get their ID
+          const user = await User.findOne({ EmailAddress: referredUser });
+          // console.log(user)
+          if (user) {
+            // Get investments for the user using their ID
+            const investments = await Investment.find({ userId: user._id, paymentMode: 'active', referalPayment: false })
+              .select('price investmentPlan paymentMode createdAt')
+              .sort({ createdAt: -1 });
+              console.log(investments)
+            if (investments.length > 0) {
+              referredInvestments.push({
+                referrer: {
+                  id: referral.userId._id,
+                  name: referral.userId.Name,
+                  email: referral.userId.EmailAddress
+                },
+                referredUser: {
+                  id: user._id,
+                  name: user.Name,
+                  email: user.EmailAddress
+                },
+                investments: investments.map(inv => ({
+                  id: inv._id,
+                  amount: inv.price,
+                  plan: inv.investmentPlan,
+                  status: inv.paymentMode,
+                  date: inv.createdAt
+                }))
+              });
+            }
+          }
+        }
+      }
+    }
+    // console.log(referredInvestments)
+    res.json({
+      success: true,
+      data: referredInvestments,
+      total: referredInvestments.length
+    });
+  } catch (error) {
+    console.error('Error fetching referred investments:', error);
+    res.status(500).json({ 
+      success: false, 
+      message: error.message 
+    });
+  }
+});
+
+router.post('/sendreferalearning', async (req, res) => {
+  try {
+    const { ReferedFrom, ReferedTo, InvestId, InvestPlan, InvestAmount, Earning } = req.body;
+
+    // Update investment's referalPayment to true and subtract earning from price
+    const updatedInvestment = await Investment.findByIdAndUpdate(
+      InvestId,
+      { 
+        referalPayment: true,
+        price: InvestAmount - Earning 
+      },
+      { new: true }
+    );
+
+    if (!updatedInvestment) {
+      return res.status(404).json({
+        success: false,
+        message: 'Investment not found'
+      });
+    }
+
+    // Create new referral earning record
+    const referralEarning = await ReferralEarningHistory.create({
+      ReferedFrom,
+      ReferedTo,
+      InvestId,
+      InvestPlan,
+      InvestAmount,
+      Earning
+    });
+    
+    // let wallet = await Wallet.findOne({ userId: ReferedFrom });
+    // if (!wallet) {
+    //   wallet = await Wallet.create({
+    //     userId: ReferedFrom,
+    //     walletBalance: Earning
+    //   });
+    // } else {
+    //   // Update wallet balance
+    //   wallet = await Wallet.findOneAndUpdate(
+    //     { userId: ReferedFrom },
+    //     { $inc: { walletBalance: Earning } },
+    //     { new: true }
+    //   );
+    // }
+
+
+    res.json({
+      success: true,
+      message: 'Referral earning processed successfully',
+      data: referralEarning
+    });
+  } catch (error) {
+    console.error('Error processing referral earning:', error);
+    res.status(500).json({
+      success: false,
+      message: error.message
+    });
+  }
+});
+
+router.get('/fetchreferalearning', async (req, res) => {
+  try {
+    const referralEarnings = await ReferralEarningHistory.find()
+      .populate('ReferedFrom', 'Name EmailAddress')
+      .populate('ReferedTo', 'Name EmailAddress')
+      .populate('InvestId', 'price investmentPlan')
+      .sort({ createdAt: -1 });
+
+    // Format the response
+    console.log(referralEarnings)
+    // const formattedEarnings = referralEarnings.map(earning => ({
+    //   id: earning._id,
+    //   referrer: {
+    //     id: earning.ReferedFrom._id,
+    //     name: earning.ReferedFrom.Name,
+    //     email: earning.ReferedFrom.EmailAddress
+    //   },
+    //   referredUser: {
+    //     id: earning.ReferedTo._id,
+    //     name: earning.ReferedTo.Name,
+    //     email: earning.ReferedTo.EmailAddress
+    //   },
+    //   investment: {
+    //     id: earning.InvestId._id,
+    //     amount: earning.InvestId.price,
+    //     plan: earning.InvestId.investmentPlan
+    //   },
+    //   earning: earning.Earning,
+    //   date: earning.createdAt
+    // }));
+
+    res.json({
+      success: true,
+      data: referralEarnings,
+      total: referralEarnings.length
+    });
+  } catch (error) {
+    console.error('Error fetching referral earnings:', error);
+    res.status(500).json({
+      success: false,
+      message: error.message
+    });
+  }
+});
+
+router.get("/userswallet", async (req, res) => {
+  try {
+    const wallets = await Wallet.find()
+      .populate('userId', 'Name EmailAddress')
+      .sort({ createdAt: -1 });
+
+    const formattedWallets = wallets.map(wallet => ({
+      id: wallet._id,
+      user: {
+        id: wallet.userId._id,
+        name: wallet.userId.Name,
+        email: wallet.userId.EmailAddress
+      },
+      balance: wallet.walletBalance,
+      createdAt: wallet.createdAt,
+      updatedAt: wallet.updatedAt
+    }));
+
+    res.json({
+      success: true,
+      data: formattedWallets,
+      total: formattedWallets.length
+    });
+  } catch (error) {
+    console.error('Error fetching wallet data:', error);
+    res.status(500).json({
+      success: false,
+      message: error.message
+    });
+  }
+});
+router.get("/PlanProfitToWallet",async(req,res)=>
+{
+  try {
+    const planProfitToWallet = await PlanProfitToWallet.find()
+    .populate('userId', 'Name EmailAddress')
+      .sort({ createdAt: -1 });
+
+    res.json({
+      success: true,
+      data: planProfitToWallet,
+      total: planProfitToWallet.length
+    }); 
+  } catch (error) {
+    console.error('Error fetching plan profit to wallet:', error);
+    res.status(500).json({
+      success: false,
+      message: error.message
+    });
+  }
+    
+})
+
+// Get all pending withdrawal requests
+router.get('/withdraw-requests', async (req, res) => {
+  try {
+    const withdrawRequests = await WithdrawRequest.find()
+      .populate('userId', 'Name EmailAddress')
+      .sort({ createdAt: -1 });
+
+    res.json({
+      success: true,
+      data: withdrawRequests,
+      total: withdrawRequests.length
+    });
+  } catch (error) {
+    console.error('Error fetching withdrawal requests:', error);
+    res.status(500).json({
+      success: false,
+      message: error.message
+    });
+  }
+});
+
+// Update withdrawal request status
+router.put('/updatewithdrawrequests', async (req, res) => {
+  try {
+    const {_id, status ,amount} = req.body;
+    const {_id:userId} = req.body.userId;
+    if(status === 'approved'){
+      const wallet = await Wallet.findOne({ userId: userId });
+      if (!wallet) {
+        return res.status(404).json({
+          success: false,
+          message: 'User wallet not found'
+        });
+      }
+      if(wallet.walletBalance < amount){
+        return res.status(400).json({
+          success: false,
+          message: 'Insufficient wallet balance'
+        });
+      }
+      wallet.walletBalance -= amount;
+      await wallet.save();
+      const updatedWithdrawRequest = await WithdrawRequest.findByIdAndUpdate(
+        _id,
+        { status: status },
+        { new: true }
+      ).populate('userId', 'Name EmailAddress');
+      const notification = await Notification.create({
+        userId: userId,
+        type: 'withdrawal',
+        title: 'Withdrawal Request Approved',
+        message: `Your withdrawal request of $${amount} has been approved`,
+        relatedId: _id,
+        onModel: 'Withdrawal'
+      }); 
+      return res.json({  
+        success: true,
+        message: 'Withdrawal request updated successfully',
+        data: updatedWithdrawRequest
+      });
+
+      
+    }
+    else{
+      const updatedWithdrawRequest = await WithdrawRequest.findByIdAndUpdate(
+        _id,
+        { status: status },
+        { new: true }
+      ).populate('userId', 'Name EmailAddress');
+      return res.json({  
+        success: true,
+        message: 'Withdrawal request updated successfully',
+        data: updatedWithdrawRequest
+      });
+    } 
+    
+  } catch (error) {
+    console.error('Error updating withdrawal request:', error);
+    res.status(500).json({
+      success: false,
+      message: error.message
+    });
+  }
+});
+
+router.get('/referralwallethistory', async (req, res) => {
+  try {
+    const referralWalletHistory = await ReferralWalletHistory.find()
+      .populate('userId', 'Name EmailAddress')
+      .sort({ createdAt: -1 }); 
+
+    res.json({
+      success: true,
+      data: referralWalletHistory,
+      total: referralWalletHistory.length
+    });
+  } catch (error) {
+    console.error('Error fetching referral wallet history:', error);
+    res.status(500).json({
+      success: false,
+      message: error.message
+    });
+  } 
 });
 
 module.exports = router; 

@@ -31,6 +31,14 @@ const DepositSchema = new mongoose.Schema(
       type: String,
       required: true,
     },
+    referalPayment: {
+      type: Boolean,
+      default: false
+    },
+    // expired:{
+    //   type:Boolean,
+    //   default:false
+    // }
   },
   { timestamps: true }
 );

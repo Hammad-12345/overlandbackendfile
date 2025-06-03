@@ -8,7 +8,7 @@ const notificationSchema = new mongoose.Schema({
   },
   type: {
     type: String,
-    enum: ['investment', 'profit', 'withdrawal', 'system','register'],
+    enum: ['investment', 'profit', 'withdrawal', 'system','register','referral'],
     required: true
   },
   title: {
@@ -29,7 +29,7 @@ const notificationSchema = new mongoose.Schema({
   },
   onModel: {
     type: String,
-    enum: ['Deposit', 'Profit', 'Withdrawal','Register',]
+    enum: ['Deposit', 'Profit', 'Withdrawal','Register','ReferalToWallet']
   }
 }, { timestamps: true });
 
