@@ -8,6 +8,7 @@ const Wallet = require("../model/walletModel");
 const PlanProfitToWallet = require("../model/PlanProfitToWallet");
 const WithdrawRequest = require("../model/WithdrawRequest");
 const Referaltowallethistory = require("../model/referaltowallethistory");
+
 const createDeposit = async (req, res) => {
   const {
     investmentPlan,
@@ -23,6 +24,19 @@ const createDeposit = async (req, res) => {
   console.log("hy");
 
   try {
+    // Check if user has already invested in this plan 3 times
+    const existingDeposits = await Deposit.find({
+      userId,
+      investmentPlan,
+      paymentMode:'active'
+    });
+
+    if (existingDeposits.length >= 3) {
+      return res.status(201).json({
+        message: `You already have 3 active plans under that investment plan. Please choose a different plan.`
+      });
+    }
+
     const deposit = await Deposit.create({
       userId,
       investmentPlan,
@@ -32,7 +46,6 @@ const createDeposit = async (req, res) => {
       screenshot,
       paymentMode,
       referalPayment: false,
-      // expired:false
     });
 
     console.log("Deposit created successfully:", deposit);
