@@ -27,7 +27,7 @@ const upload = multer({ storage });
 const allowedOrigins = [
   'http://localhost:3000',
   'https://overlandsolutions.net',
-  'http://overlandsolutions.net'
+  'https://www.overlandsolutions.net'
 ];
 
 app.use(cors({
