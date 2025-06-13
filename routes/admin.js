@@ -329,28 +329,14 @@ router.post('/add-profit', async (req, res) => {
     }
 
     // Check if profit already exists for this investment
-    const existingProfit = await Profit.findOne({ investmentId });
-    
-    if (existingProfit) {
-      // Update existing profit by adding new amount
-      existingProfit.amount += amount;
-      await existingProfit.save();
-
-      return res.status(200).json({
-        success: true,
-        message: 'Profit updated successfully',
-        profit: existingProfit
-      });
-    }
-    else{
-      const profit = await Profit.create({
+   
+        await Profit.create({
         userId,
         investmentId,
         investmentPlanId,
         amount,
         date: new Date()
       });
-    }
 
 
     return res.status(201).json({
@@ -540,7 +526,7 @@ router.post('/sendreferalearning', async (req, res) => {
       InvestId,
       { 
         referalPayment: true,
-        price: InvestAmount - Earning 
+        price: InvestAmount 
       },
       { new: true }
     );
