@@ -19,6 +19,10 @@ const profitSchema = new mongoose.Schema({
     type: Number,
     required: true
   },
+  sendtoWallet: {
+    type: Boolean,
+    default: false
+  },
   date: {
     type: Date,
     default: Date.now

@@ -165,11 +165,14 @@ const sendprofittowallet = async (req, res) => {
   try {
     const userId = req.userId;
     const { investment, profit } = req.body;
-    console.log(investment)
-    // Step 1: Update investment to expired
+    // console.log(investment)
+    // Step 1: Update investment to expired and set current date
     const updatedInvestment = await Deposit.findByIdAndUpdate(
       investment._id,
-      { expired: true },
+      { 
+        updatedAt: new Date(), // Set current date when profit is sent
+        // paymentMode: 'expired' // Mark investment as expired
+      },
       { new: true }
     );
 
@@ -178,15 +181,18 @@ const sendprofittowallet = async (req, res) => {
         message: 'Investment plan not found'
       });
     }
-    const existingProfit = await Profit.findOne({ investmentId: investment._id });
-    console.log(existingProfit)
-    if (existingProfit) {
-      // Update existing profit by adding new amount
-      existingProfit.amount = 0;
-      await existingProfit.save();
+    // console.log(updatedInvestment)
+    const existingProfits = await Profit.find({ investmentId: investment._id });
+    console.log(existingProfits)
+    if (existingProfits && existingProfits.length > 0) {
+      // Update all profits for this investment
+      await Profit.updateMany(
+        { investmentId: investment._id },
+        { $set: { sendtoWallet: true } }
+      );
     }
 
-    // Step 2: Update or create wallet with profit
+    // // Step 2: Update or create wallet with profit
     let wallet = await Wallet.findOne({ userId });
     if (!wallet) {
       wallet = await Wallet.create({
@@ -201,7 +207,7 @@ const sendprofittowallet = async (req, res) => {
       );
     }
 
-    // Step 3: Create profit transfer record
+    // // Step 3: Create profit transfer record
     const profitTransfer = await PlanProfitToWallet.create({
       userId,
       investmentId: investment._id,
@@ -216,8 +222,8 @@ const sendprofittowallet = async (req, res) => {
     res.status(200).json({
       message: 'Profit successfully transferred to wallet',
       investment: updatedInvestment,
-      wallet: wallet,
-      profitTransfer: profitTransfer
+      // wallet: wallet,
+      // profitTransfer: profitTransfer
     });
 
   } catch (error) {

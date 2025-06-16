@@ -94,7 +94,7 @@ const register = async (req, res) => {
       html: `
         <div style="max-width: 600px; margin: auto; font-family: 'Poppins', sans-serif; border: 1px solid #e0e0e0; border-radius: 8px; overflow: hidden;">
           <div style="background-color: #0d1321; padding: 30px 20px; text-align: center;">
-            <img src="https://d3hwx9f38knfi9.cloudfront.net/logodesign.png" alt="Overland Solutions Logo" style="height: 50px; margin-bottom: 10px;" />
+            <img src="https://overlandresources.s3.eu-north-1.amazonaws.com/newlogo-removebg-preview.png" alt="Overland Solutions Logo" style="height: 50px; margin-bottom: 10px;" />
             <h1 style="color: #ffffff; font-size: 24px; margin: 0;">Welcome to Overland Solutions</h1>
           </div>
           <div style="padding: 30px; background-color: #ffffff;">
@@ -202,7 +202,7 @@ const login = async (req, res) => {
       subject: "Your OTP Code for Login",
       html: `<div style="max-width: 600px; margin: auto; font-family: 'Poppins', sans-serif; border: 1px solid #e0e0e0; border-radius: 8px; overflow: hidden;">
   <div style="background-color: #0d1321; padding: 30px 20px; text-align: center;">
-    <img src="https://d3hwx9f38knfi9.cloudfront.net/logodesign.png" alt="Overland Solutions Logo" style="height: 50px; margin-bottom: 10px;" />
+    <img src="https://overlandresources.s3.eu-north-1.amazonaws.com/newlogo-removebg-preview.png" alt="Overland Solutions Logo" style="height: 50px; margin-bottom: 10px;" />
     <h1 style="color: #ffffff; font-size: 24px; margin: 0;">Login Verification</h1>
   </div>
   <div style="padding: 30px; background-color: #ffffff;">
