@@ -92,7 +92,7 @@ router.get('/investments', async (req, res) => {
 
     // Define investment plans with their details
     const investmentPlans = {
-      'Gold Trading': {
+      'Gold/Stocks': {
         dailyProfit: '1.5% to 3.5%',
         description: 'Daily profit trading plan'
       },
