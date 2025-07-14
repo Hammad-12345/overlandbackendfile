@@ -86,7 +86,7 @@ router.get('/users', async (req, res) => {
 router.get('/investments', async (req, res) => {
   try {
     const investments = await Investment.find()
-      .populate('userId', 'EmailAddress')
+      .populate('userId', 'Name EmailAddress')
       .select('price investmentPlan paymentMode screenshot createdAt')
       .sort({ createdAt: -1 });
 
@@ -119,12 +119,14 @@ router.get('/investments', async (req, res) => {
       // Check if userId exists before accessing its properties
       const userEmail = inv.userId ? inv.userId.EmailAddress : 'N/A';
       const userId = inv.userId ? inv.userId._id : 'N/A';
+      const userName = inv.userId ? inv.userId.Name : 'N/A';
       const planDetails = investmentPlans[inv.investmentPlan] || {};
 
       return {
         id: inv._id,
         userId: userId,
         userEmail: userEmail,
+        userName: userName,
         investmentPlan: inv.investmentPlan,
         planDetails: planDetails,
         price: inv.price || 0,
@@ -288,7 +290,7 @@ router.get('/referrals', async (req, res) => {
 router.get('/profits', async (req, res) => {
   try {
     const profits = await Profit.find()
-      .populate('userId', 'EmailAddress')
+      .populate('userId', 'Name EmailAddress')
       .populate('investmentId', 'price')
       .sort({ date: -1 });
 
@@ -628,6 +630,7 @@ router.get("/userswallet", async (req, res) => {
     const wallets = await Wallet.find()
       .populate('userId', 'Name EmailAddress')
       .sort({ createdAt: -1 });
+      console.log(wallets)
 
     const formattedWallets = wallets.map(wallet => ({
       id: wallet._id,
