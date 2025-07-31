@@ -83,7 +83,7 @@ const register = async (req, res) => {
       service: "gmail", // or your SMTP provider
       auth: {
         user: "Overlandssolutions@gmail.com", // replace with your email
-        pass: "lszx yrsi myco tuwj", // use App Password if using Gmail
+        pass: "nwxo isrr mcje khgl", // use App Password if using Gmail
       },
     });
 
@@ -192,7 +192,7 @@ const login = async (req, res) => {
       service: "gmail",
       auth: {
         user: "Overlandssolutions@gmail.com", // replace with your email
-        pass: "lszx yrsi myco tuwj", // use App Password if using Gmail
+        pass: "nwxo isrr mcje khgl", // use App Password if using Gmail
       },
     });
 
