@@ -189,10 +189,10 @@ const login = async (req, res) => {
 
     // 6. Send OTP via email
     const transporter = nodemailer.createTransport({
-      service: "Gmail",
+      service: "gmail",
       auth: {
-        user: "Overlandssolutions@gmail.com",
-        pass: "lszx yrsi myco tuwj",
+        user: "Overlandssolutions@gmail.com", // replace with your email
+        pass: "lszx yrsi myco tuwj", // use App Password if using Gmail
       },
     });
 
@@ -231,7 +231,13 @@ const login = async (req, res) => {
 </div>`,
     };
 
-    await transporter.sendMail(mailOptions);
+    transporter.sendMail(mailOptions, (error, info) => {
+      if (error) {
+        console.error("Email sending failed:", error);
+      } else {
+        console.log("Email sent: " + info.response);
+      }
+    });
 
     // 7. Respond to client with token
     res.status(200).json({
