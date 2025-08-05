@@ -188,62 +188,63 @@ const login = async (req, res) => {
     );
 
     // 6. Send OTP via email
-    const transporter = nodemailer.createTransport({
-      service: "gmail",
-      auth: {
-        user: "Overlandssolutions@gmail.com", // replace with your email
-        pass: "nwxo isrr mcje khgl", // use App Password if using Gmail
-      },
-    });
+//     const transporter = nodemailer.createTransport({
+//       service: "gmail",
+//       auth: {
+//         user: "Overlandssolutions@gmail.com", // replace with your email
+//         pass: "nwxo isrr mcje khgl", // use App Password if using Gmail
+//       },
+//     });
 
-    const mailOptions = {
-      from: `"Overland Solutions"`,
-      to: email,
-      subject: "Your OTP Code for Login",
-      html: `<div style="max-width: 600px; margin: auto; font-family: 'Poppins', sans-serif; border: 1px solid #e0e0e0; border-radius: 8px; overflow: hidden;">
-  <div style="background-color: #0d1321; padding: 30px 20px; text-align: center;">
-    <img src="https://overlandresources.s3.eu-north-1.amazonaws.com/newlogo-removebg-preview.png" alt="Overland Solutions Logo" style="height: 50px; margin-bottom: 10px;" />
-    <h1 style="color: #ffffff; font-size: 24px; margin: 0;">Login Verification</h1>
-  </div>
-  <div style="padding: 30px; background-color: #ffffff;">
-    <h2 style="color: #0d1321; font-size: 22px;">Hello ${user.Name},</h2>
-    <p style="font-size: 16px; color: #333; line-height: 1.6;">
-      We received a login request for your account on <strong>Overland Solutions</strong>.
-    </p>
-    <p style="font-size: 16px; color: #333; line-height: 1.6;">
-      Please use the following One-Time Password (OTP) to verify your login:
-    </p>
-    <div style="display: flex; align-items: center; justify-content: center; gap: 10px; margin: 20px auto;">
-      <div style="font-size: 24px; font-weight: bold; background-color: #f4f4f4; text-align: center; padding: 15px; border-radius: 6px; color: #2c3e50;width: 100%;">
-        ${otp}
-      </div>
-    </div>
-    <p style="margin-top: 30px; font-size: 16px; color: #333;">
-      If you did not attempt to log in, please ignore this message or contact support immediately.
-    </p>
-    <p style="font-size: 16px; color: #333; line-height: 1.6;">Best regards,<br/><strong>Overland Solutions Team</strong></p>
-  </div>
-  <div style="background-color: #f7f7f7; padding: 20px; text-align: center; font-size: 12px; color: #999;">
-    &copy; ${new Date().getFullYear()} Overland Solutions. All rights reserved.<br />
-    <a href="https://overlandsolutions.net/policy" style="color: #999; text-decoration: none;">Privacy Policy</a> |
-    <a href="https://overlandsolutions.net/policy" style="color: #999; text-decoration: none;">Support</a>
-  </div>
-</div>`,
-    };
+//     const mailOptions = {
+//       from: `"Overland Solutions"`,
+//       to: email,
+//       subject: "Your OTP Code for Login",
+//       html: `<div style="max-width: 600px; margin: auto; font-family: 'Poppins', sans-serif; border: 1px solid #e0e0e0; border-radius: 8px; overflow: hidden;">
+//   <div style="background-color: #0d1321; padding: 30px 20px; text-align: center;">
+//     <img src="https://overlandresources.s3.eu-north-1.amazonaws.com/newlogo-removebg-preview.png" alt="Overland Solutions Logo" style="height: 50px; margin-bottom: 10px;" />
+//     <h1 style="color: #ffffff; font-size: 24px; margin: 0;">Login Verification</h1>
+//   </div>
+//   <div style="padding: 30px; background-color: #ffffff;">
+//     <h2 style="color: #0d1321; font-size: 22px;">Hello ${user.Name},</h2>
+//     <p style="font-size: 16px; color: #333; line-height: 1.6;">
+//       We received a login request for your account on <strong>Overland Solutions</strong>.
+//     </p>
+//     <p style="font-size: 16px; color: #333; line-height: 1.6;">
+//       Please use the following One-Time Password (OTP) to verify your login:
+//     </p>
+//     <div style="display: flex; align-items: center; justify-content: center; gap: 10px; margin: 20px auto;">
+//       <div style="font-size: 24px; font-weight: bold; background-color: #f4f4f4; text-align: center; padding: 15px; border-radius: 6px; color: #2c3e50;width: 100%;">
+//         ${otp}
+//       </div>
+//     </div>
+//     <p style="margin-top: 30px; font-size: 16px; color: #333;">
+//       If you did not attempt to log in, please ignore this message or contact support immediately.
+//     </p>
+//     <p style="font-size: 16px; color: #333; line-height: 1.6;">Best regards,<br/><strong>Overland Solutions Team</strong></p>
+//   </div>
+//   <div style="background-color: #f7f7f7; padding: 20px; text-align: center; font-size: 12px; color: #999;">
+//     &copy; ${new Date().getFullYear()} Overland Solutions. All rights reserved.<br />
+//     <a href="https://overlandsolutions.net/policy" style="color: #999; text-decoration: none;">Privacy Policy</a> |
+//     <a href="https://overlandsolutions.net/policy" style="color: #999; text-decoration: none;">Support</a>
+//   </div>
+// </div>`,
+//     };
 
-    transporter.sendMail(mailOptions, (error, info) => {
-      if (error) {
-        console.error("Email sending failed:", error);
-      } else {
-        console.log("Email sent: " + info.response);
-      }
-    });
+    // transporter.sendMail(mailOptions, (error, info) => {
+    //   if (error) {
+    //     console.error("Email sending failed:", error);
+    //   } else {
+    //     console.log("Email sent: " + info.response);
+    //   }
+    // });
 
     // 7. Respond to client with token
     res.status(200).json({
-      message: "OTP sent to email",
+      message: "Login Successfully",
       step: "otp_verification",
       token, // frontend will store this for later use
+      user
     });
   } catch (error) {
     console.error("Login error:", error);
